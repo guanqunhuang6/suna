@@ -87,7 +87,7 @@ class ToolManager:
             self._register_agent_builder_tools(agent_id, disabled_tools)
         
         # Browser tool
-        self._register_browser_tool(disabled_tools)
+        # self._register_browser_tool(disabled_tools)
         
         logger.debug(f"Tool registration complete. Registered tools: {list(self.thread_manager.tool_registry.tools.keys())}")
     

@@ -9,7 +9,34 @@ SUNA_CONFIG = {
     "model": "openai/gpt-5-mini",
     "system_prompt": SYSTEM_PROMPT,
     "configured_mcps": [],
-    "custom_mcps": [],
+    "custom_mcps": [
+        # {
+        #     "name": "fal-ai",
+        #     "display_name": "Fal AI Image Generation",
+        #     "type": "http",
+        #     "url": "https://mcp-fal.fastmcp.app/mcp",
+        #     "enabledTools": ["*"],  # 启用所有工具
+        #     "config": {}  # 无需认证
+        # }
+        {
+        "name": "MCP FAL",
+        "type": "http",
+        "url": "https://mcp-fal.fastmcp.app/mcp",
+        "display_name": "MCP FAL",
+        "enabledTools": [
+          "models",
+          "search",
+          "schema",
+          "generate",
+          "result",
+          "status",
+          "cancel",
+          "upload"
+        ],
+        "qualifiedName": "custom_http_mcp_fal",
+        "config": {}
+      }
+    ],
     "agentpress_tools": {
         "sb_shell_tool": True,
         "sb_files_tool": True,

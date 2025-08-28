@@ -1,0 +1,159 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Kortix Backend Serverless Deployment
+
+Globals:
+  Function:
+    Timeout: 900
+    MemorySize: 2048
+    Runtime: python3.11
+    Environment:
+      Variables:
+        ENV_MODE: production
+        SUPABASE_URL: !Ref SupabaseUrl
+        SUPABASE_ANON_KEY: !Ref SupabaseAnonKey
+        SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceKey
+        REDIS_HOST: !GetAtt ElastiCacheCluster.RedisEndpoint.Address
+        REDIS_PORT: 6379
+        REDIS_SSL: true
+
+Parameters:
+  SupabaseUrl:
+    Type: String
+    Description: Supabase project URL
+  SupabaseAnonKey:
+    Type: String
+    Description: Supabase anon key
+    NoEcho: true
+  SupabaseServiceKey:
+    Type: String
+    Description: Supabase service role key
+    NoEcho: true
+
+Resources:
+  # API Gateway
+  KortixApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+
+  # Lambda Function for API
+  BackendApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../backend/
+      Handler: lambda_handler.handler
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref KortixApi
+            Path: /{proxy+}
+            Method: ANY
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+
+  # SQS Queue for background tasks
+  TaskQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: kortix-tasks
+      VisibilityTimeout: 960
+      MessageRetentionPeriod: 1209600
+
+  # Lambda Function for Worker
+  WorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../../backend/
+      Handler: worker_handler.handler
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt TaskQueue.Arn
+            BatchSize: 1
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+
+  # VPC Configuration
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs '']
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Lambda functions
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref ElastiCacheSecurityGroup
+
+  # ElastiCache for Redis
+  ElastiCacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ElastiCache
+      VpcId: !Ref VPC
+
+  ElastiCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnet group for ElastiCache
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+
+  ElastiCacheCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      CacheNodeType: cache.t3.micro
+      Engine: redis
+      NumCacheNodes: 1
+      VpcSecurityGroupIds:
+        - !Ref ElastiCacheSecurityGroup
+      CacheSubnetGroupName: !Ref ElastiCacheSubnetGroup
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${KortixApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  QueueUrl:
+    Description: SQS Queue URL
+    Value: !Ref TaskQueue

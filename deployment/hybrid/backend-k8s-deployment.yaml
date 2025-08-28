@@ -1,0 +1,290 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kortix-backend
+---
+# ============================================
+# Redis 部署 - 缓存和会话存储
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: kortix-backend
+spec:
+  replicas: 1  # Redis 单实例，生产环境建议使用 ElastiCache
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        emptyDir: {}
+---
+# ============================================
+# Backend API 部署 - FastAPI 服务
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api
+  namespace: kortix-backend
+  labels:
+    app: backend-api
+    tier: api
+spec:
+  replicas: 2  # 2个副本保证基础可用性
+  strategy:
+    type: RollingUpdate  # 滚动更新策略
+    rollingUpdate:
+      maxSurge: 1        # 更新时最多可以多1个Pod
+      maxUnavailable: 1  # 更新时最多不可用1个Pod
+  selector:
+    matchLabels:
+      app: backend-api
+  template:
+    metadata:
+      labels:
+        app: backend-api
+        tier: api
+    spec:
+      # 反亲和性：将 Pod 分散到不同节点
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - backend-api
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: backend
+        image: 706929238717.dkr.ecr.us-west-2.amazonaws.com/suna-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
+        envFrom:
+        - secretRef:
+            name: backend-secrets  # 敏感配置从 Secret 读取
+        - configMapRef:
+            name: backend-config   # 普通配置从 ConfigMap 读取
+        resources:
+          requests:
+            memory: "512Mi"   # 请求 512MB 内存
+            cpu: "250m"       # 请求 0.25 CPU
+          limits:
+            memory: "1Gi"     # 最大 1GB 内存
+            cpu: "500m"       # 最大 0.5 CPU
+        # 就绪探针：判断 Pod 是否准备好接收流量
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        # 存活探针：判断 Pod 是否健康
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        # 启动探针：给应用足够的启动时间
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30  # 最多 5 分钟启动时间
+---
+# ============================================
+# Worker 部署 - Dramatiq 后台任务处理
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-worker
+  namespace: kortix-backend
+  labels:
+    app: backend-worker
+    tier: worker
+spec:
+  replicas: 2  # 2个Worker处理后台任务
+  selector:
+    matchLabels:
+      app: backend-worker
+  template:
+    metadata:
+      labels:
+        app: backend-worker
+        tier: worker
+    spec:
+      containers:
+      - name: worker
+        image: 706929238717.dkr.ecr.us-west-2.amazonaws.com/suna-backend:latest
+        imagePullPolicy: Always
+        # Worker 启动命令
+        command: 
+        - "uv"
+        - "run"
+        - "dramatiq"
+        - "--skip-logging"
+        - "--processes"
+        - "4"      # 每个容器4个进程
+        - "--threads"
+        - "4"      # 每个进程4个线程
+        - "run_agent_background"
+        env:
+        - name: REDIS_HOST
+          value: "redis-service"
+        envFrom:
+        - secretRef:
+            name: backend-secrets
+        - configMapRef:
+            name: backend-config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        # Worker 不需要健康检查端点，使用进程检查
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep dramatiq | grep -v grep"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+# ============================================
+# Service 定义 - 内部服务发现
+# ============================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: kortix-backend
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  clusterIP: None  # Headless service for StatefulSet
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api-service
+  namespace: kortix-backend
+  annotations:
+    # AWS ALB 注解
+    service.beta.kubernetes.io/aws-load-balancer-type: "alb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+spec:
+  type: LoadBalancer  # 使用负载均衡器暴露服务
+  selector:
+    app: backend-api
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+---
+# ============================================
+# HPA - 自动水平扩缩容
+# ============================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-api-hpa
+  namespace: kortix-backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  # CPU 使用率超过 70% 时扩容
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  # 内存使用率超过 80% 时扩容
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60  # 扩容稳定窗口
+      policies:
+      - type: Pods
+        value: 2  # 每次最多增加2个Pod
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300  # 缩容稳定窗口
+      policies:
+      - type: Pods
+        value: 1  # 每次最多减少1个Pod
+        periodSeconds: 60
+---
+# ============================================
+# PVC - 持久化存储声明
+# ============================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: kortix-backend
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp2  # AWS EBS gp2 存储类

@@ -20,17 +20,38 @@ class SandboxDeployTool(SandboxToolsBase):
         """Clean and normalize a path to be relative to /workspace"""
         return clean_path(path, self.workspace_path)
 
+    # @openapi_schema({
+    #     "type": "function",
+    #     "function": {
+    #         "name": "deploy",
+    #         "description": "Deploy a static website (HTML+CSS+JS) from a directory in the sandbox to Cloudflare Pages. Only use this tool when permanent deployment to a production environment is needed. The directory path must be relative to /workspace. The website will be deployed to {name}.z-agent.pages.dev.",
+    #         "parameters": {
+    #             "type": "object",
+    #             "properties": {
+    #                 "name": {
+    #                     "type": "string",
+    #                     "description": "Name for the deployment, will be used in the URL as {name}.z-agent.pages.dev"
+    #                 },
+    #                 "directory_path": {
+    #                     "type": "string",
+    #                     "description": "Path to the directory containing the static website files to deploy, relative to /workspace (e.g., 'build')"
+    #                 }
+    #             },
+    #             "required": ["name", "directory_path"]
+    #         }
+    #     }
+    # })
     @openapi_schema({
         "type": "function",
         "function": {
             "name": "deploy",
-            "description": "Deploy a static website (HTML+CSS+JS) from a directory in the sandbox to Cloudflare Pages. Only use this tool when permanent deployment to a production environment is needed. The directory path must be relative to /workspace. The website will be deployed to {name}.kortix.cloud.",
+            "description": "Deploy a static website (HTML+CSS+JS) from a directory in the sandbox to Cloudflare Pages. Only use this tool when permanent deployment to a production environment is needed. The directory path must be relative to /workspace. The website will be deployed to cloudflare pages.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "name": {
                         "type": "string",
-                        "description": "Name for the deployment, will be used in the URL as {name}.kortix.cloud"
+                        "description": "Name for the deployment, will be used in the URL"
                     },
                     "directory_path": {
                         "type": "string",
@@ -63,7 +84,7 @@ class SandboxDeployTool(SandboxToolsBase):
         Only use this tool when permanent deployment to a production environment is needed.
         
         Args:
-            name: Name for the deployment, will be used in the URL as {name}.kortix.cloud
+            name: Name for the deployment, will be used in the URL
             directory_path: Path to the directory to deploy, relative to /workspace
             
         Returns:

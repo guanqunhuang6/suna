@@ -1,0 +1,47 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: kortix-cluster
+  region: us-west-2
+  version: "1.28"
+
+iam:
+  withOIDC: true
+
+nodeGroups:
+  - name: kortix-workers
+    instanceType: t3.medium
+    minSize: 2
+    maxSize: 5
+    desiredCapacity: 2
+    amiFamily: AmazonLinux2
+    volumeSize: 50
+    volumeType: gp3
+    volumeEncrypted: true
+    ssh:
+      allow: false
+    tags:
+      Environment: production
+      Project: kortix
+      ManagedBy: eksctl
+    iam:
+      attachPolicyARNs:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy
+      withAddonPolicies:
+        ebs: true
+
+addons:
+- name: vpc-cni
+  version: latest
+- name: coredns
+  version: latest
+- name: kube-proxy
+  version: latest
+- name: aws-ebs-csi-driver
+  version: latest
+  wellKnownPolicies:
+    ebsCSIController: true
