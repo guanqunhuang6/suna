@@ -72,7 +72,13 @@ export function TemplateSelector({ isOpen, onClose, onSelectTemplate, onDirectSe
               {/* Loading state */}
               {isLoading && (
                 <div className="px-6 py-4 bg-black/80 backdrop-blur-md rounded-2xl shadow-xl">
-                  <div className="text-white text-center">加载模版中...</div>
+                  <div className="text-white text-center flex items-center justify-center">
+                    <span className="flex gap-1">
+                      <span className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </span>
+                  </div>
                 </div>
               )}
 
@@ -111,7 +117,7 @@ export function TemplateSelector({ isOpen, onClose, onSelectTemplate, onDirectSe
                       }
                     }}
                   >
-                    <div className="text-white font-medium text-center">[模版2]</div>
+                    <div className="text-white font-medium text-center">{templates[1]?.title || 'Loading...'}</div>
                   </motion.div>
 
                   {/* Custom input */}

@@ -367,8 +367,9 @@ export function CameraModal({ isOpen, onClose }: CameraModalProps) {
             className="relative w-full h-full bg-black overflow-hidden"
           >
             {/* 相机预览区域 - TikTok风格 */}
-            <div className="absolute inset-0 flex items-center justify-center px-4 pb-24">
-              <div className="relative w-full max-w-sm aspect-[9/16] bg-black rounded-3xl overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 flex items-center justify-center px-6">
+              <div className="relative w-full max-w-[320px] aspect-[9/16] bg-black rounded-t-[24px] overflow-hidden shadow-2xl" 
+                   style={{ marginTop: '60px', marginBottom: '160px' }}>
                 {/* Video stream */}
                 <video
                   ref={videoRef}
@@ -439,8 +440,8 @@ export function CameraModal({ isOpen, onClose }: CameraModalProps) {
 
             {/* 顶部控制栏 */}
             <div className="fixed top-0 left-0 w-full z-50" 
-                 style={{ paddingTop: 'max(1rem, env(safe-area-inset-top, 1rem))' }}>
-              <div className="flex justify-between items-center px-4 py-2">
+                 style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))' }}>
+              <div className="flex justify-between items-center px-4 py-1">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -453,9 +454,8 @@ export function CameraModal({ isOpen, onClose }: CameraModalProps) {
             </div>
 
             {/* 拍照按钮 - 居中位置，TikTok风格 */}
-            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 z-50"
-                 style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
-              <div className="py-6">
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+              <div className="py-2">
                 <div className="relative">
                   {/* 外圈白色边框 */}
                   <div 
@@ -470,9 +470,8 @@ export function CameraModal({ isOpen, onClose }: CameraModalProps) {
             </div>
 
             {/* 左侧按钮 - Template */}
-            <div className="absolute bottom-0 left-8 z-[100]"
-                 style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
-              <div className="py-6 flex items-center">
+            <div className="absolute bottom-8 left-12 z-[100]">
+              <div className="py-2 flex items-center">
                 <Button
                   variant="ghost"
                   onClick={() => setShowTemplateSelector(!showTemplateSelector)}
@@ -487,9 +486,8 @@ export function CameraModal({ isOpen, onClose }: CameraModalProps) {
             </div>
 
             {/* 右侧按钮 - 发送 */}
-            <div className="absolute bottom-0 right-16 z-[80]"
-                 style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
-              <div className="py-6 flex items-center">
+            <div className="absolute bottom-8 right-12 z-[80]">
+              <div className="py-2 flex items-center">
                 <Button
                   variant="ghost"
                   size="icon"

@@ -30,7 +30,7 @@ export function useTemplateData() {
         },
         {
           id: '2', 
-          title: '模版2',
+          title: 'Gota be exited!',
           content: '这是模版2的内容'
         }
       ];
