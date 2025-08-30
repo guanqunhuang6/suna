@@ -29,6 +29,8 @@ import sys
 from services import email_api
 from triggers import api as triggers_api
 from services import api_keys_api
+from services import image_upload_api
+from services import url_feed_api
 
 
 if sys.platform == "win32":
@@ -139,9 +141,12 @@ if config.ENV_MODE == EnvMode.LOCAL:
 
 # Add staging-specific origins
 if config.ENV_MODE == EnvMode.STAGING:
-    allowed_origins.append("https://staging.suna.so")
+    # allowed_origins.append("https://staging.suna.so")
+    allowed_origins.append("https://www.consciousness.systems")
     allowed_origins.append("http://localhost:3000")
+    # 添加 HTTPS ALB 域名支持
     allow_origin_regex = r"https://suna-.*-prjcts\.vercel\.app"
+    # allow_origin_regex = r"https://suna-.*-prjcts\.vercel\.app|https://.*\.us-west-2\.elb\.amazonaws\.com"
 
 app.add_middleware(
     CORSMiddleware,
@@ -172,6 +177,8 @@ api_router.include_router(template_api.router, prefix="/templates")
 
 api_router.include_router(transcription_api.router)
 api_router.include_router(email_api.router)
+api_router.include_router(image_upload_api.router)
+api_router.include_router(url_feed_api.router)
 
 from knowledge_base import api as knowledge_base_api
 api_router.include_router(knowledge_base_api.router)

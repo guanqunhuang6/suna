@@ -43,10 +43,12 @@ export const useContentQueueStore = create<ContentQueueState>()((set, get) => ({
     set({ isFetchingMore: true });
 
     try {
+      // Fetch all URLs from backend without filtering
       const response = await fetch('/api/content/feed');
       const data = await response.json();
       
       if (data.contents && data.contents.length > 0) {
+        // Just append all contents without checking for duplicates
         set((state) => ({
           contentQueue: [...state.contentQueue, ...data.contents],
           isFetchingMore: false,
@@ -67,20 +69,24 @@ export const useContentQueueStore = create<ContentQueueState>()((set, get) => ({
     set({ isLoading: true, contentQueue: [], currentIndex: 0 });
 
     try {
-      // Fetch initial batch of content
-      const promises = [];
-      for (let i = 0; i < 5; i++) {
-        promises.push(fetch('/api/content/feed').then(res => res.json()));
+      // Fetch all available content URLs from backend
+      const response = await fetch('/api/content/feed');
+      const data = await response.json();
+      
+      if (data.contents && data.contents.length > 0) {
+        set({
+          contentQueue: data.contents,
+          currentIndex: 0,
+          isLoading: false,
+        });
+      } else {
+        console.log('No content available from backend');
+        set({
+          contentQueue: [],
+          currentIndex: 0,
+          isLoading: false,
+        });
       }
-      
-      const results = await Promise.all(promises);
-      const allContents = results.flatMap(r => r.contents || []);
-      
-      set({
-        contentQueue: allContents,
-        currentIndex: 0,
-        isLoading: false,
-      });
     } catch (error) {
       console.error('Error initializing content:', error);
       set({

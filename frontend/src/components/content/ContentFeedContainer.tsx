@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { useContentQueueStore } from '@/lib/stores/content/content-queue-store';
 import { HTMLContentViewer } from './HTMLContentViewer';
 import { NavigationArrows } from './NavigationArrows';
 import { LoadingIndicator } from './LoadingIndicator';
 import { ContentPreloader } from './ContentPreloader';
+import { CameraModal } from '../camera/CameraModal';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface ContentFeedContainerProps {
@@ -21,6 +24,8 @@ export function ContentFeedContainer({ className }: ContentFeedContainerProps) {
     navigatePrevious,
     initializeContent,
   } = useContentQueueStore();
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   // Initialize content on mount
   useEffect(() => {
@@ -102,6 +107,13 @@ export function ContentFeedContainer({ className }: ContentFeedContainerProps) {
         onNavigateDown={navigateNext}
         canNavigateUp={canNavigateUp}
         canNavigateDown={canNavigateDown}
+        onCreateClick={() => setIsCameraOpen(true)}
+      />
+
+      {/* Camera Modal */}
+      <CameraModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
       />
     </div>
   );

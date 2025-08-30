@@ -1,9 +1,13 @@
 import os
+import re
+from datetime import datetime
 from dotenv import load_dotenv
 from agentpress.tool import ToolResult, openapi_schema, usage_example
 from sandbox.tool_base import SandboxToolsBase
 from utils.files_utils import clean_path
 from agentpress.thread_manager import ThreadManager
+from services.url_feed import insert_url
+from utils.logger import logger
 
 # Load environment variables
 load_dotenv()
@@ -127,8 +131,36 @@ class SandboxDeployTool(SandboxToolsBase):
                 print(f"Deployment command output: {response.result}")
                 
                 if response.exit_code == 0:
+                    # Extract deployment URL from wrangler output or construct it
+                    deployment_url = f"https://{project_name}.pages.dev"
+                    
+                    # Try to extract the actual URL from wrangler output
+                    url_pattern = r'https://[^\s]+\.pages\.dev'
+                    url_matches = re.findall(url_pattern, response.result)
+                    if url_matches:
+                        deployment_url = url_matches[0]
+                    
+                    # Auto-upload the deployment URL to database
+                    try:
+                        meta_info = {
+                            "type": "cloudflare_deployment",
+                            "sandbox_id": self.sandbox_id,
+                            "project_name": project_name,
+                            "deployment_name": name,
+                            "directory_path": directory_path,
+                            "deployed_at": datetime.now().isoformat(),
+                            "deployment_output": response.result[:500] if response.result else ""
+                        }
+                        
+                        await insert_url(deployment_url, meta_info)
+                        logger.debug(f"Successfully saved deployment URL to database: {deployment_url}")
+                    except Exception as e:
+                        # Log warning but don't fail the deployment
+                        logger.warning(f"Failed to save deployment URL to database: {e}")
+                    
                     return self.success_response({
                         "message": f"Website deployed successfully",
+                        "deployment_url": deployment_url,
                         "output": response.result
                     })
                 else:

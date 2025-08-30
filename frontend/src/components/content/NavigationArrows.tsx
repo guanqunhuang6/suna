@@ -9,6 +9,7 @@ interface NavigationArrowsProps {
   onNavigateDown: () => void;
   canNavigateUp: boolean;
   canNavigateDown: boolean;
+  onCreateClick?: () => void;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export function NavigationArrows({
   onNavigateDown,
   canNavigateUp,
   canNavigateDown,
+  onCreateClick,
   className
 }: NavigationArrowsProps) {
   const [clickedButton, setClickedButton] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function NavigationArrows({
           "active:scale-75",
           clickedButton === 'create' && "animate-pulse scale-125"
         )}
-        onClick={() => handleClick(() => console.log('Create button clicked'), 'create')}
+        onClick={() => handleClick(() => onCreateClick?.(), 'create')}
       >
         <Plus className={cn(
           "w-6 h-6",
