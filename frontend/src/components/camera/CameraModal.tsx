@@ -233,7 +233,7 @@ export function CameraModal({ isOpen, onClose }: CameraModalProps) {
       }
       
 
-      finalPrompt =` 把这个合照${imageUrl} ，使用 fal-ai/nano-banana/edit 生成三张图片，分别是，1. 把每个人的表情替换成经典的meme doge 笑or 惊讶皮卡丘脸，2. 把合照中的背景都换成海边派对 3. 把合照中的每个人都换成超级英雄的服侍。
+      finalPrompt =` 把这个合照${imageUrl} ，使用 fal-ai/nano-banana/edit 生成三张图片，分别是，1. 把每个人的表情替换成经典的meme doge 笑or 惊讶皮卡丘脸，2. 把合照中的背景都换成海边派对 3. 把合照中的每个人都换成卡通人物or香蕉套装的服侍。
       在得到这三张照片后，参考如下代码做一个网页，总共包括原图是四张图，然后点击对应的button 就可以进行切换到对应的照片，记得要简约的美且流畅，除了Image and button不能有其他任何元素和如下html 一样的美和简约。做好网页后，记得简单测试下网页，再部署到cloudflare 上去。不要问user问题，直接干直到完成。
       
       参考的代码是 <!DOCTYPE html>

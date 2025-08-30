@@ -99,10 +99,10 @@ spec:
             name: backend-config   # 普通配置从 ConfigMap 读取
         resources:
           requests:
-            memory: "512Mi"   # 请求 512MB 内存
+            memory: "1Gi"     # 请求 1GB 内存
             cpu: "250m"       # 请求 0.25 CPU
           limits:
-            memory: "1Gi"     # 最大 1GB 内存
+            memory: "2Gi"     # 最大 2GB 内存
             cpu: "500m"       # 最大 0.5 CPU
         # 就绪探针：判断 Pod 是否准备好接收流量
         readinessProbe:
