@@ -1,0 +1,21 @@
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = US
+ST = Washington
+L = Seattle
+O = Suna AI
+OU = Backend API
+CN = *.us-west-2.elb.amazonaws.com
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = *.us-west-2.elb.amazonaws.com
+DNS.2 = *.elb.amazonaws.com

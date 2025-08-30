@@ -180,10 +180,10 @@ spec:
             name: backend-config
         resources:
           requests:
-            memory: "512Mi"
+            memory: "1Gi"
             cpu: "250m"
           limits:
-            memory: "1Gi"
+            memory: "2Gi"
             cpu: "500m"
         # Worker 不需要健康检查端点，使用进程检查
         livenessProbe:
@@ -209,7 +209,7 @@ spec:
   ports:
   - port: 6379
     targetPort: 6379
-  clusterIP: None  # Headless service for StatefulSet
+  type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
@@ -217,15 +217,16 @@ metadata:
   name: backend-api-service
   namespace: kortix-backend
   annotations:
-    # AWS ALB 注解
-    service.beta.kubernetes.io/aws-load-balancer-type: "alb"
+    # 使用 Network Load Balancer
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 spec:
   type: LoadBalancer  # 使用负载均衡器暴露服务
   selector:
     app: backend-api
   ports:
-  - port: 80
+  - name: http
+    port: 80
     targetPort: 8000
     protocol: TCP
 ---

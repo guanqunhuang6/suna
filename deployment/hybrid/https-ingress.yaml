@@ -1,0 +1,52 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-https-ingress
+  namespace: kortix-backend
+  annotations:
+    # 使用 ALB (Application Load Balancer)
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    
+    # SSL 配置
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: auto-discover
+    
+    # CORS 配置 - 直接在 ALB 层面处理
+    alb.ingress.kubernetes.io/load-balancer-attributes: 'routing.http.x_forwarded_for.enabled=true'
+    
+    # 健康检查
+    alb.ingress.kubernetes.io/healthcheck-path: /api/health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    
+    # 超时设置
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=60
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-api-service
+            port:
+              number: 80
+---
+# 更新 Service 以支持 Ingress
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api-service
+  namespace: kortix-backend
+spec:
+  type: ClusterIP  # 改为 ClusterIP，因为现在通过 Ingress 暴露
+  selector:
+    app: backend-api
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP

@@ -224,11 +224,342 @@ export function CameraModal({ isOpen, onClose }: CameraModalProps) {
       if (imageUrl && template.id === '1') {
         // Special prompt for template 1 with image URL
         finalPrompt = `is there any one in the image I just give you and could you please tell me what is your model? Another image url is ${imageUrl}, please also try to tell me which hair color the human have in the image url`;
+        // finalPrompt = `我现在希望调用fal-ai/nano-banana/edit  对这个图片${imageUrl},进行编辑,prompt is 把相片里的每个人物都变成一个手办人物。每个人只能生成一张图片，生成图片再做一个html网页，然后部署到cloudflare 上去。 `;
+        finalPrompt = `我现在希望调用fal-ai/nano-banana/edit  对这个图片${imageUrl},进行编辑(使用url 进行图片编辑而不是我发给你的这张，我发给你的这张用于读取人物的大致的位置),prompt is 把相片里的每个人物都变成一个手办人物（高细节、玩具手办质感（适合展示））。每个人只能生成一张图片，生成图片再做一个html网页，然后部署到cloudflare 上去。 `;
       } else if (imageUrl) {
         // For other templates, append the URL
         finalPrompt = `${template.content} [Additional image URL: ${imageUrl}]`;
+        finalPrompt = `我现在希望调用fal-ai/nano-banana/edit  对这个图片${imageUrl},进行编辑(使用url 进行图片编辑而不是我发给你的这张),prompt is 把相片里的每个人物都变成一个手办人物（高细节、玩具手办质感（适合展示）），背景需要保持和当前的一致性，图片需要具有一定的科幻意识感觉。总共生成一张图片，生成图片再做一个html网页，这个网页就是一张图片的展示card，然后点击某个button 就可以进行切换到手办，注意切换的时候动画的流畅性，然后部署到cloudflare 上去。 别问直接干`;
       }
       
+
+      finalPrompt =` 把这个合照${imageUrl} ，使用 fal-ai/nano-banana/edit 生成三张图片，分别是，1. 把每个人的表情替换成经典的meme doge 笑or 惊讶皮卡丘脸，2. 把合照中的背景都换成海边派对 3. 把合照中的每个人都换成超级英雄的服侍。
+      在得到这三张照片后，参考如下代码做一个网页，总共包括原图是四张图，然后点击对应的button 就可以进行切换到对应的照片，记得要简约的美且流畅，除了Image and button不能有其他任何元素和如下html 一样的美和简约。做好网页后，记得简单测试下网页，再部署到cloudflare 上去。不要问user问题，直接干直到完成。
+      
+      参考的代码是 <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Water Videos Music Experience</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Video Container */
+        .video-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        .video-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .video-slide.active {
+            opacity: 1;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Mode buttons */
+        .mode-buttons {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 20;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90%;
+        }
+
+        .mode-btn {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .mode-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mode-btn.active {
+            background: rgba(100, 200, 255, 0.4);
+            border-color: rgba(100, 200, 255, 0.8);
+            box-shadow: 0 0 30px rgba(100, 200, 255, 0.5);
+        }
+
+        /* Loading screen */
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+
+        /* Mobile optimization */
+        @media (max-width: 768px) {
+            .mode-buttons {
+                gap: 10px;
+                bottom: 40px;
+            }
+            .mode-btn {
+                padding: 10px 16px;
+                font-size: 12px;
+                min-width: 50px;
+            }
+        }
+
+        /* Small mobile devices */
+        @media (max-width: 380px) {
+            .mode-buttons {
+                gap: 6px;
+            }
+            .mode-btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading" id="loadingScreen">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Video Container -->
+    <div class="video-container">
+        <!-- Video 1: Blue Core -->
+        <div class="video-slide active" data-mode="blue">
+            <video muted loop playsinline preload="metadata">
+                <source src="assets/hammondo84_blue-core_caustic_light_volume_rays_god_light_--ar_9764a4ed-2281-48b9-bf96-db4252e7d4e8_0.mp4" type="video/mp4">
+            </video>
+        </div>
+        <!-- Video 2: Desert Lights -->
+        <div class="video-slide" data-mode="desert">
+            <video muted loop playsinline preload="metadata">
+                <source src="assets/hammondo84_pulsing_lights_over_a_desert_landscape_--ar_45_--v_9ce3dd93-d83c-4ec6-bce5-d465613f1978_0.mp4" type="video/mp4">
+            </video>
+        </div>
+        <!-- Video 3: Flowing Light -->
+        <div class="video-slide" data-mode="flow">
+            <video muted loop playsinline preload="metadata">
+                <source src="assets/oestokki_a_flowing_stream_of_light_that_moves_with_breath_shi_88cc85e1-42f2-41d0-bdcc-6234639fb0b7_0.mp4" type="video/mp4">
+            </video>
+        </div>
+        <!-- Video 4: Animated Wallpaper -->
+        <div class="video-slide" data-mode="animate">
+            <video muted loop playsinline preload="metadata">
+                <source src="assets/u1778869178_httpss.mj.rung5GEHOrs7g8_Animated_live_wallpaper__00edef0b-0aaf-4c3d-82bf-ba2c3689ecf5_0.mp4" type="video/mp4">
+            </video>
+        </div>
+        <!-- Video 5: Water Flowers -->
+        <div class="video-slide" data-mode="water">
+            <video muted loop playsinline preload="metadata">
+                <source src="assets/u1778869178_httpss.mj.runzXpDRFUQkwI_Moving_water_and_flowers_dd9d9769-b31e-4a7c-a27f-e9de3f78c07b_0.mp4" type="video/mp4">
+            </video>
+        </div>
+    </div>
+
+    <!-- Mode Buttons -->
+    <div class="mode-buttons">
+        <button class="mode-btn active" data-mode="blue">1</button>
+        <button class="mode-btn" data-mode="desert">2</button>
+        <button class="mode-btn" data-mode="flow">3</button>
+        <button class="mode-btn" data-mode="animate">4</button>
+        <button class="mode-btn" data-mode="water">5</button>
+    </div>
+
+
+    <!-- Audio Element (Hidden) -->
+    <audio id="backgroundMusic" loop autoplay preload="auto">
+        <source src="assets/1-10 Poor Butterfly.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Elements
+        const loadingScreen = document.getElementById('loadingScreen');
+        const audio = document.getElementById('backgroundMusic');
+        const modeButtons = document.querySelectorAll('.mode-btn');
+        const videoSlides = document.querySelectorAll('.video-slide');
+        
+        // State
+        let currentMode = 'blue';
+        
+        // Initialize
+        function init() {
+            // Set initial volume
+            audio.volume = 0.7;
+            
+            // Hide loading after delay
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                // Start first video
+                playVideo(currentMode);
+                // Try to play audio
+                audio.play().catch(() => {
+                    // Autoplay might be blocked, user interaction will trigger it
+                });
+            }, 1500);
+            
+            // Setup mode buttons
+            modeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const mode = btn.dataset.mode;
+                    switchMode(mode);
+                    // Try to play audio on first interaction
+                    audio.play().catch(() => {});
+                });
+            });
+            
+        }
+        
+        // Switch video mode
+        function switchMode(mode) {
+            if (mode === currentMode) return;
+            
+            // Update buttons
+            modeButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+            
+            // Update videos
+            videoSlides.forEach(slide => {
+                const isActive = slide.dataset.mode === mode;
+                slide.classList.toggle('active', isActive);
+                
+                const video = slide.querySelector('video');
+                if (isActive) {
+                    video.currentTime = 0;
+                    video.play().catch(() => {});
+                } else {
+                    video.pause();
+                }
+            });
+            
+            currentMode = mode;
+        }
+        
+        // Play video by mode
+        function playVideo(mode) {
+            const activeSlide = document.querySelector([data-mode=mode]);
+            if (activeSlide) {
+                const video = activeSlide.querySelector('video');
+                video.play().catch(() => {});
+            }
+        }
+      
+        // Video loop
+        videoSlides.forEach(slide => {
+            const video = slide.querySelector('video');
+            video.addEventListener('ended', () => {
+                video.currentTime = 0;
+                video.play();
+            });
+        });
+        
+        // Audio loop
+        audio.addEventListener('ended', () => {
+            audio.currentTime = 0;
+            audio.play();
+        });
+        
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            const activeSlide = document.querySelector('.video-slide.active');
+            const activeVideo = activeSlide ? activeSlide.querySelector('video') : null;
+            
+            if (document.hidden) {
+                if (activeVideo) activeVideo.pause();
+                audio.pause();
+            } else {
+                if (activeVideo) activeVideo.play().catch(() => {});
+                audio.play().catch(() => {});
+            }
+        });
+        
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
+      `;
+
+
+
       const formData = new FormData();
       formData.append('prompt', finalPrompt);
       
