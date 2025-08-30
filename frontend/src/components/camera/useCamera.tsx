@@ -17,7 +17,7 @@ export function useCamera() {
       // Check if getUserMedia is available with fallback
       if (!navigator.mediaDevices?.getUserMedia) {
         // Try older API for compatibility
-        const getUserMedia = navigator.getUserMedia || 
+        const getUserMedia = (navigator as any).getUserMedia || 
                             (navigator as any).webkitGetUserMedia || 
                             (navigator as any).mozGetUserMedia;
         
