@@ -302,9 +302,11 @@ export function CameraModal({ isOpen, onClose }: CameraModalProps) {
       if (imageUrl && selectedTemplate?.id === '1') {
         // Special prompt for template 1 with image URL
         finalPrompt = `is there any one in the image I just give you and could you please tell me what is your model? Another image url is ${imageUrl}, please also try to tell me which hair color the human have in the image url`;
+        finalPrompt = `我现在希望调用fal-ai/nano-banana/edit  对这个图片${imageUrl},进行编辑,prompt is 把相片里的每个人物都变成一个手办人物。每个人只能生成一张图片，生成图片再做一个html网页，然后部署到cloudflare 上去。 `;
       } else if (imageUrl) {
         // For other cases, append the URL
-        finalPrompt = `${prompt.trim()} [Additional image URL: ${imageUrl}]`;
+        // finalPrompt = `${prompt.trim()} [Additional image URL: ${imageUrl}]`;
+        finalPrompt = `我现在希望调用fal-ai/nano-banana/edit  对这个图片${imageUrl},进行编辑,prompt is 把相片里的每个人物都变成一个手办人物。每个人只能生成一张图片，生成图片再做一个html网页，然后部署到cloudflare 上去。 `;
       }
       
       const formData = new FormData();
